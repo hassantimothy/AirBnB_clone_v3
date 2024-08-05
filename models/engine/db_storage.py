@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 """ Database engine """
 
-# /home/harnstim/alx/AirBnB_clone_v3/models/engine/db_storage.py
-
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker, scoped_session
 from models.base_model import Base
 from models import base_model, amenity, city, place, review, state, user
+
 
 class DBStorage:
     """handles long term storage of all class instances"""
@@ -40,9 +39,7 @@ class DBStorage:
         """ returns a dictionary of all objects """
         obj_dict = {}
         if cls:
-            if isinstance(cls, str):
-                cls = self.CNC.get(cls)
-            obj_class = self.__session.query(cls).all()
+            obj_class = self.__session.query(self.CNC.get(cls)).all()
             for item in obj_class:
                 key = str(item.__class__.__name__) + "." + str(item.id)
                 obj_dict[key] = item
@@ -50,8 +47,8 @@ class DBStorage:
         for class_name in self.CNC:
             if class_name == 'BaseModel':
                 continue
-            cls = self.CNC.get(class_name)
-            obj_class = self.__session.query(cls).all()
+            obj_class = self.__session.query(
+                self.CNC.get(class_name)).all()
             for item in obj_class:
                 key = str(item.__class__.__name__) + "." + str(item.id)
                 obj_dict[key] = item
@@ -64,36 +61,25 @@ class DBStorage:
     def get(self, cls, id):
         """
         fetches specific object
-        :param cls: class of object
+        :param cls: class of object as string
         :param id: id of object as string
         :return: found object or None
         """
-        if isinstance(cls, str):
-            cls = self.CNC.get(cls)
-        if cls:
-            return self.__session.query(cls).get(id)
+        all_class = self.all(cls)
+
+        for obj in all_class.values():
+            if id == str(obj.id):
+                return obj
+
         return None
 
     def count(self, cls=None):
         """
         count of how many instances of a class
-        :param cls: class name (or class object)
+        :param cls: class name
         :return: count of instances of a class
         """
-        if cls:
-            if isinstance(cls, str):
-                cls = self.CNC.get(cls)
-            if cls:
-                return self.__session.query(cls).count()
-        else:
-            count = 0
-            for class_name in self.CNC:
-                if class_name == 'BaseModel':
-                    continue
-                cls = self.CNC.get(class_name)
-                count += self.__session.query(cls).count()
-            return count
-        return 0
+        return len(self.all(cls))
 
     def save(self):
         """ commits all changes of current database session """
